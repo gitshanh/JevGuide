@@ -20,6 +20,17 @@ class Config(ctx: Context) {
         get() = sp.getString("model", Prompt.MODELS[0]).orEmpty().ifEmpty { Prompt.MODELS[0] }
         set(v) = sp.edit().putString("model", v).apply()
 
+    /**
+     * Jev 判读端点的基地址，**要填到 /v1 这一级**（默认官方：[JevHttp.DEFAULT_BASE]），留空＝官方。
+     *
+     * 之前写死在 JevHttp 里（想换中转站只能改代码重打包）；现在与聊天模型的 base_url
+     * 同一套玩法：默认官方，想换就在设置页填。⚠ 中转站必须兼容同一套 systemone 协议
+     * （判读不是 OpenAI /chat/completions，协议不同），纯聊天中转对判读没用。
+     */
+    var jevBaseUrl: String
+        get() = sp.getString("jev_base_url", JevHttp.DEFAULT_BASE).orEmpty().ifEmpty { JevHttp.DEFAULT_BASE }
+        set(v) = sp.edit().putString("jev_base_url", v.trim()).apply()
+
     /** 题目语言：zh / mix / en（见 docs/实验-题目语言AB.md） */
     var lang: String
         get() = sp.getString("lang", "zh").orEmpty().ifEmpty { "zh" }

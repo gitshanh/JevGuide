@@ -289,32 +289,55 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    /** 「三方模型（调 Jev 算攻略度）」分区：Jev 密钥的保存与连通性测试 */
+    /**
+     * 「三方模型（调 Jev 算攻略度）」分区：判读端点（基地址 / 模型名 / 密钥）的配置与连通性测试。
+     *
+     * 与聊天模型分区同一套语法（三件套输入框 + 保存 + 测试），差别只有一处：
+     * 判读走的是 Jev 的 systemone 协议，不是 OpenAI /chat/completions —— 能换的端点
+     * 必须兼容这套协议（官方端点或兼容中转），没有「厂商预设」可抄，也就不做下拉。
+     */
     private fun buildKeySection() {
         openSection("三方模型（调 Jev 算攻略度）", Design.Section.KEY)
-        sub("填自己的 TypeSafe/Jev 密钥（apikey_… 开头，约 100 字符）。没有的话：console.typesafe.ai 用 Google 或邮箱验证码登录 → API Keys → 新建，复制过来贴上。")
+        sub(
+            "判读由 Jev 完成，走 systemone 协议（**不是** OpenAI /chat/completions）。\n" +
+                "地址默认官方 https://api.typesafe.ai/v1（填到 /v1 这一级）；兼容这套协议的中转/聚合端点也能换 ——\n" +
+                "例如聚合站上架了 Jev 模型时，照抄它文档里的地址与模型 id（OpenRouter 这类聚合端点就属此类）。\n" +
+                "密钥 apikey_… 开头（约 100 字符）：console.typesafe.ai 用 Google 或邮箱验证码登录 → API Keys → 新建；\n" +
+                "换了端点，密钥与模型名也要跟着换成那一家的。三样都只存本机。"
+        )
+        val base = edit(cfg.jevBaseUrl, "https://api.typesafe.ai/v1（明文 http 会被拦）")
+        val model = edit(cfg.model, "jev-latest（官方另一档：jev-1.13.0）")
         val key = edit(cfg.apiKey, "apikey_…（只存在本机）", password = true)
-        button("保存密钥", filled = true) {
+        button("保存判读端点配置", filled = true) {
+            cfg.jevBaseUrl = base.text.toString().trim()
+            cfg.model = model.text.toString().trim()
             cfg.apiKey = key.text.toString().trim()
-            toast(if (cfg.hasKey()) "已保存（${cfg.apiKey.length} 字符）" else "太短了，密钥一般 100 字符左右")
+            toast(
+                if (cfg.hasKey()) "已保存：${cfg.model}（${cfg.jevBaseUrl}）"
+                else "密钥太短了，一般 100 字符左右"
+            )
             refreshDynamic()
         }
-        button("测试密钥", filled = true) {
+        button("测试判读端点", filled = true) {
+            val b = base.text.toString().trim()
+            val m = model.text.toString().trim()
             val k = key.text.toString().trim()
             if (k.length < 20) {
                 toast("先填密钥")
                 return@button
             }
+            cfg.jevBaseUrl = b
+            cfg.model = m
             cfg.apiKey = k
             toast("正在测试…")
-            background({ JevHttp.test(k) }) { r ->
+            background({ JevHttp.test(k, b, m) }) { r ->
                 when (r) {
                     is JevResult.Ok -> {
-                        AppLog.add("密钥测试成功")
-                        toast("密钥可用 ✓")
+                        AppLog.add("判读端点测试成功：${cfg.model}（${cfg.jevBaseUrl}）")
+                        toast("判读端点可用 ✓")
                     }
                     is JevResult.Err -> {
-                        AppLog.add("密钥测试失败：${r.message}")
+                        AppLog.add("判读端点测试失败：${r.message}")
                         toast("失败：" + r.message, true)
                     }
                 }
@@ -354,9 +377,7 @@ class SettingsActivity : AppCompatActivity() {
             cfg.lang = Prompt.LANGS[it]
             toast("题目语言 → " + cfg.lang)
         }
-        dropdown("模型", Prompt.MODELS, Prompt.MODELS.indexOf(cfg.model).coerceAtLeast(0)) {
-            cfg.model = Prompt.MODELS[it]
-        }
+        // 判读用的「模型」在「三方模型」分区配置（端点/模型名/密钥三件套放一起，可填中转的模型 id）
         dropdown("情绪显示条数", listOf("1 条", "3 条", "5 条"), listOf(1, 3, 5).indexOf(cfg.emotionTop).coerceAtLeast(0)) {
             cfg.emotionTop = listOf(1, 3, 5)[it]
         }
@@ -897,7 +918,10 @@ class SettingsActivity : AppCompatActivity() {
         val on = WatchService.instance != null
         statusText?.text = buildString {
             append("无障碍服务：").append(if (on) "已开启 ✓" else "未开启 ✗（上面那个按钮去开）").append('\n')
-            append("Jev 密钥：").append(if (cfg.hasKey()) "已配置（${cfg.apiKey.length} 字符）" else "未配置").append('\n')
+            append("Jev 判读：").append(
+                if (cfg.hasKey()) "${cfg.model}（${cfg.jevBaseUrl}）"
+                else "未配置（判读与攻略度不可用）"
+            ).append('\n')
             append("聊天模型：").append(
                 if (cfg.hasChatKey()) "${cfg.chatModel}（${cfg.chatBaseUrl}）"
                 else "未配置（只能判读，不出文案）"

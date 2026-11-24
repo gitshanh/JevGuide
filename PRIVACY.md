@@ -48,7 +48,7 @@
 
 本 App **没有自己的服务器**。它只把上面第 2 条列出的内容发往**你自己在设置里填写**的两个地址：
 
-1. **判读接口（Jev / typesafe.ai）**：默认 `https://api.typesafe.ai/v1/systemone` —— 关系判读与攻略度。
+1. **判读接口（Jev / typesafe.ai）**：默认 `https://api.typesafe.ai/v1/systemone`（也可在设置里换成兼容同一协议的中转端点）—— 关系判读与攻略度。
    该服务由第三方运营（见 <https://typesafe.ai>），其服务器在境外（美国）。你填写的密钥决定了请求归属你的账号。
 2. **聊天模型接口**：默认是智谱 GLM（`https://open.bigmodel.cn/api/paas/v4`），也可以填任何 OpenAI 兼容端点
    （DeepSeek、硅基流动、阿里云百炼、Kimi、火山方舟、MiniMax、自建中转等）。这一家完全由你自己选择。

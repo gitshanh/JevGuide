@@ -12,6 +12,7 @@ import org.junit.Test
  * 默认**跳过**（不设密钥就不会偷偷发请求）；要跑就：
  *   PowerShell:  $env:JEV_KEY='apikey_…';  ./gradlew testDebugUnitTest --tests '*LiveJevSmokeTest*'
  *   bash:        JEV_KEY=apikey_… ./gradlew testDebugUnitTest --tests '*LiveJevSmokeTest*'
+ * 可选：JEV_BASE=https://…/v1 指向兼容 systemone 协议的端点（默认官方 api.typesafe.ai）。
  */
 class LiveJevSmokeTest {
 
@@ -35,7 +36,8 @@ class LiveJevSmokeTest {
         assertTrue("state 不该为空", state.isNotEmpty())
 
         val body = Prompt.requestJson(state, Prompt.MODELS[0], "zh")
-        val result = JevHttp.analyze(key, body, timeoutMs = 40000)
+        // JEV_BASE 可选：指向兼容 systemone 协议的端点（如 https://relay.example.com/v1），默认官方
+        val result = JevHttp.analyze(key, body, timeoutMs = 40000, baseUrl = System.getenv("JEV_BASE").orEmpty())
 
         when (result) {
             is JevResult.Err -> throw AssertionError("真接口调用失败：" + result.message)
